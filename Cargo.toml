@@ -1,0 +1,11 @@
+[package]
+name = "witch-hunt"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+raylib = { version = "5.5.1", features = [] }
+rand = "0.9.1"
+hecs = "0.10.5"
+rapier3d = "0.26.1"
+nalgebra = "0.33.2"

@@ -1,0 +1,192 @@
+use components::*;
+use hecs::World;
+use physics::*;
+use rapier3d::prelude::*;
+use raylib::prelude::*;
+use systems::drawing::*;
+use systems::player::*;
+use systems::spawn::*;
+
+mod components;
+mod physics;
+mod systems;
+
+// Window size
+const WINDOW_WIDTH: i32 = 800;
+const WINDOW_HEIGHT: i32 = 450;
+
+// Mouse sensitivity
+const MOUSE_SENSITIVITY: f32 = 0.003;
+
+// Ground size
+const GROUND_X: f32 = 50.0;
+const GROUND_Z: f32 = 50.0;
+
+// Tree count
+const NUM_OF_TREES: u32 = 25;
+
+// Ball count
+const NUM_OF_BALLS: u32 = 4;
+
+fn main() {
+    // Create ECS world
+    let mut ecs_world = World::new();
+
+    // Create physics world
+    let mut physics_world = PhysicsWorld::new();
+
+    // Create ground collider
+    let ground = ColliderBuilder::cuboid(GROUND_X / 2.0, 0.1 / 2.0, GROUND_Z / 2.0)
+        .translation(vector![0.0, -0.05, 0.0])
+        .build();
+
+    // Add ground collider to physics world
+    physics_world.colliders.insert(ground);
+
+    // Create Raylib handle and thread
+    let (mut rl, thread) = raylib::init()
+        .size(WINDOW_WIDTH, WINDOW_HEIGHT)
+        .title("Raylib Test")
+        .build();
+
+    // Create camera
+    let mut camera = Camera3D::perspective(
+        Vector3::new(0.0, 2.0, 4.0),
+        Vector3::new(0.0, 2.0, 0.0),
+        Vector3::new(0.0, 1.0, 0.0),
+        60.0,
+    );
+
+    // Create mouse look
+    let mut mouse_look = MouseLook::new(MOUSE_SENSITIVITY);
+
+    // Disable cursor
+    rl.disable_cursor();
+
+    // Set FPS
+    rl.set_target_fps(60);
+
+    // List of entity positions for checking spawn locations don't duplicate
+    let mut positions: Vec<Vector3> = Vec::new();
+
+    // Generate player
+    let player_start_position = generate_player(&mut ecs_world, &mut positions, &mut physics_world);
+
+    // Set camera position to player start position
+    camera.position = Vector3::new(
+        player_start_position.x,
+        player_start_position.y,
+        player_start_position.z,
+    );
+
+    // Generate trees
+    generate_trees(
+        &mut ecs_world,
+        &mut positions,
+        &mut physics_world,
+        NUM_OF_TREES,
+    );
+
+    // Generate balls
+    generate_balls(
+        &mut ecs_world,
+        &mut positions,
+        &mut physics_world,
+        NUM_OF_BALLS,
+    );
+
+    // Set game state to title screen
+    let mut current_screen = GameState::Title;
+
+    // Main game loop
+    while !rl.window_should_close() {
+        // Match current game state
+        match current_screen {
+            // Title screen
+            GameState::Title => {
+                // Press Enter or Space to continue
+                if rl.is_key_pressed(KeyboardKey::KEY_ENTER)
+                    || rl.is_key_pressed(KeyboardKey::KEY_SPACE)
+                {
+                    // Set game state to Game
+                    current_screen = GameState::Game;
+                }
+
+                // Begin drawing frame
+                let mut d = rl.begin_drawing(&thread);
+
+                // Clear frame
+                d.clear_background(Color::WHITE);
+
+                // Draw welcome message
+                d.draw_text(
+                    "Welcome! Press ENTER or SPACE to continue...",
+                    40,
+                    40,
+                    10,
+                    Color::BLACK,
+                );
+            }
+            // Game
+            GameState::Game => {
+                // Get mouse info
+                mouse_look.update_from_mouse(&rl);
+
+                // Get player from ECS
+                if let Some((_, player)) = ecs_world.query::<&mut Player>().iter().next() {
+                    // Handle player movement
+                    handle_player_movement(&mut physics_world, &rl, player, mouse_look.yaw());
+
+                    // Update physics world
+                    physics_world.step();
+
+                    // Update camera
+                    update_camera(
+                        &mut camera,
+                        &physics_world,
+                        player,
+                        mouse_look.yaw(),
+                        mouse_look.pitch(),
+                    );
+                } else {
+                    // Update physics world
+                    physics_world.step();
+                }
+
+                // Begin drawing frame
+                let mut d = rl.begin_drawing(&thread);
+
+                // Clear frame
+                d.clear_background(Color::SKYBLUE);
+
+                // Draw 3D objects
+                d.draw_mode3D(camera, |mut d3d, _camera| {
+                    // Draw ground
+                    d3d.draw_plane(
+                        Vector3::new(0.0, 0.0, 0.0),
+                        Vector2::new(GROUND_X, GROUND_Z),
+                        Color::LIMEGREEN,
+                    );
+
+                    // Draw forest
+                    draw_forest(&mut d3d, &ecs_world, &physics_world);
+
+                    // Draw balls
+                    draw_balls(&mut d3d, &ecs_world, &physics_world);
+
+                    // Draw collision wireframes
+                    debug_colliders(&mut d3d, &physics_world, Color::RED);
+                });
+
+                // Draw HUD
+                draw_hud(&mut d);
+            }
+        }
+    }
+}
+
+// Game states
+enum GameState {
+    Title,
+    Game,
+}
