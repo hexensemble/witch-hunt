@@ -1,6 +1,6 @@
 use crate::components::*;
 use crate::physics::*;
-use hecs::{Bundle, Entity, World};
+use hecs::{Bundle, World};
 use rand::{rngs::ThreadRng, Rng};
 use rapier3d::prelude::*;
 use raylib::prelude::*;
@@ -12,8 +12,7 @@ fn generate_entities<F, B>(
     physics_world: &mut PhysicsWorld,
     entity_count: u32,
     mut generator_fn: F,
-) -> Vec<Entity>
-where
+) where
     F: FnMut(Vector3, &mut PhysicsWorld, &mut ThreadRng) -> (B, Option<ColliderHandle>),
     B: Bundle,
 {
@@ -22,9 +21,6 @@ where
 
     // Num of entities generated
     let mut generated = 0;
-
-    // List of entities to return
-    let mut entities = Vec::new();
 
     while generated < entity_count {
         // Generate random X and Z coords
@@ -60,15 +56,9 @@ where
             }
         }
 
-        // Add entity to return list
-        entities.push(entity);
-
         // Increment num of entities generated
         generated += 1;
     }
-
-    // Return list of entities
-    entities
 }
 
 // Generate player
