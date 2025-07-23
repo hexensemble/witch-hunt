@@ -1,48 +1,20 @@
 use components::*;
 use hecs::World;
+use map::*;
 use physics::*;
-use rapier3d::prelude::*;
 use raylib::prelude::*;
+use settings::*;
 use systems::drawing::*;
 use systems::player::*;
 use systems::spawn::*;
 
 mod components;
+mod map;
 mod physics;
+mod settings;
 mod systems;
 
-// Window size
-const WINDOW_WIDTH: i32 = 800;
-const WINDOW_HEIGHT: i32 = 450;
-
-// Mouse sensitivity
-const MOUSE_SENSITIVITY: f32 = 0.003;
-
-// Ground size
-const GROUND_X: f32 = 50.0;
-const GROUND_Z: f32 = 50.0;
-
-// Tree count
-const NUM_OF_TREES: u32 = 25;
-
-// Ball count
-const NUM_OF_BALLS: u32 = 4;
-
 fn main() {
-    // Create ECS world
-    let mut ecs_world = World::new();
-
-    // Create physics world
-    let mut physics_world = PhysicsWorld::new();
-
-    // Create ground collider
-    let ground = ColliderBuilder::cuboid(GROUND_X / 2.0, 0.1 / 2.0, GROUND_Z / 2.0)
-        .translation(vector![0.0, -0.05, 0.0])
-        .build();
-
-    // Add ground collider to physics world
-    physics_world.colliders.insert(ground);
-
     // Create Raylib handle and thread
     let (mut rl, thread) = raylib::init()
         .size(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -65,6 +37,15 @@ fn main() {
 
     // Set FPS
     rl.set_target_fps(60);
+
+    // Create ECS world
+    let mut ecs_world = World::new();
+
+    // Create physics world
+    let mut physics_world = PhysicsWorld::new();
+
+    // Create map
+    generate_map(&mut ecs_world, &mut physics_world);
 
     // List of entity positions for checking spawn locations don't duplicate
     let mut positions: Vec<Vector3> = Vec::new();
@@ -162,11 +143,47 @@ fn main() {
                 // Draw 3D objects
                 d.draw_mode3D(camera, |mut d3d, _camera| {
                     // Draw ground
+                    // TODO Move to drawing.rs
                     d3d.draw_plane(
-                        Vector3::new(0.0, 0.0, 0.0),
-                        Vector2::new(GROUND_X, GROUND_Z),
+                        Vector3::new(GROUND_POS_X, GROUND_POS_Y, GROUND_POS_Z),
+                        Vector2::new(GROUND_SIZE_X, GROUND_SIZE_Z),
                         Color::LIMEGREEN,
                     );
+
+                    // Draw walls
+                    // TODO Move to drawing.rs
+                    let walls = [
+                        // West
+                        (
+                            Vector3::new(-WALL_POS_Z, WALL_POS_Y, WALL_POS_X),
+                            Vector3::new(WALL_SIZE_X, WALL_SIZE_Y, WALL_SIZE_Z),
+                        ),
+                        // East
+                        (
+                            Vector3::new(WALL_POS_Z, WALL_POS_Y, WALL_POS_X),
+                            Vector3::new(WALL_SIZE_X, WALL_SIZE_Y, WALL_SIZE_Z),
+                        ),
+                        // South
+                        (
+                            Vector3::new(WALL_POS_X, WALL_POS_Y, WALL_POS_Z),
+                            Vector3::new(WALL_SIZE_Z, WALL_SIZE_Y, WALL_SIZE_X),
+                        ),
+                        // North
+                        (
+                            Vector3::new(WALL_POS_X, WALL_POS_Y, -WALL_POS_Z),
+                            Vector3::new(WALL_SIZE_Z, WALL_SIZE_Y, WALL_SIZE_X),
+                        ),
+                    ];
+
+                    for (pos, size) in walls {
+                        d3d.draw_cube(
+                            Vector3::new(pos.x / 2.0, pos.y / 2.0, pos.z / 2.0),
+                            size.x,
+                            size.y,
+                            size.z,
+                            Color::DARKGRAY,
+                        );
+                    }
 
                     // Draw forest
                     draw_forest(&mut d3d, &ecs_world, &physics_world);

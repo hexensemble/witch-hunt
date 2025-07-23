@@ -23,5 +23,15 @@ pub struct Ball {
     pub color: Color,
 }
 
+// Ground component
+pub struct Ground {
+    pub body_handle: RigidBodyHandle,
+}
+
+// Wall component
+pub struct Wall {
+    pub body_handle: RigidBodyHandle,
+}
+
 // Nothing component
 pub struct Nothing;
