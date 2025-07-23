@@ -104,12 +104,7 @@ pub fn generate_player(
                     .insert_with_parent(collider, body_handle, &mut p_world.bodies);
 
             // Create player
-            let player = Player {
-                position,
-                width,
-                height,
-                body_handle,
-            };
+            let player = Player { body_handle };
 
             // Return component bundle and collider handle
             ((player, Nothing), Some(collider_handle))
