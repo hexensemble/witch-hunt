@@ -3,9 +3,6 @@ use raylib::prelude::*;
 
 // Player component
 pub struct Player {
-    pub position: Vector3,
-    pub width: f32,
-    pub height: f32,
     pub body_handle: RigidBodyHandle,
 }
 
