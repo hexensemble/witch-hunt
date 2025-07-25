@@ -1,8 +1,54 @@
 use crate::components::*;
 use crate::physics::*;
+use crate::settings::*;
 use hecs::World;
 use rapier3d::math::Isometry;
 use raylib::prelude::*;
+
+// Draw ground
+pub fn draw_ground(d3d: &mut RaylibMode3D<RaylibDrawHandle>) {
+    d3d.draw_plane(
+        Vector3::new(GROUND_POS_X, GROUND_POS_Y, GROUND_POS_Z),
+        Vector2::new(GROUND_SIZE_X, GROUND_SIZE_Z),
+        Color::LIMEGREEN,
+    );
+}
+
+// Draw walls
+pub fn draw_walls(d3d: &mut RaylibMode3D<RaylibDrawHandle>) {
+    let walls = [
+        // West
+        (
+            Vector3::new(-WALL_POS_Z, WALL_POS_Y, WALL_POS_X),
+            Vector3::new(WALL_SIZE_X, WALL_SIZE_Y, WALL_SIZE_Z),
+        ),
+        // East
+        (
+            Vector3::new(WALL_POS_Z, WALL_POS_Y, WALL_POS_X),
+            Vector3::new(WALL_SIZE_X, WALL_SIZE_Y, WALL_SIZE_Z),
+        ),
+        // South
+        (
+            Vector3::new(WALL_POS_X, WALL_POS_Y, WALL_POS_Z),
+            Vector3::new(WALL_SIZE_Z, WALL_SIZE_Y, WALL_SIZE_X),
+        ),
+        // North
+        (
+            Vector3::new(WALL_POS_X, WALL_POS_Y, -WALL_POS_Z),
+            Vector3::new(WALL_SIZE_Z, WALL_SIZE_Y, WALL_SIZE_X),
+        ),
+    ];
+
+    for (pos, size) in walls {
+        d3d.draw_cube(
+            Vector3::new(pos.x / 2.0, pos.y / 2.0, pos.z / 2.0),
+            size.x,
+            size.y,
+            size.z,
+            Color::DARKGRAY,
+        );
+    }
+}
 
 // Draw forest
 pub fn draw_forest(

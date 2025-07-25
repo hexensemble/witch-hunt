@@ -143,47 +143,10 @@ fn main() {
                 // Draw 3D objects
                 d.draw_mode3D(camera, |mut d3d, _camera| {
                     // Draw ground
-                    // TODO Move to drawing.rs
-                    d3d.draw_plane(
-                        Vector3::new(GROUND_POS_X, GROUND_POS_Y, GROUND_POS_Z),
-                        Vector2::new(GROUND_SIZE_X, GROUND_SIZE_Z),
-                        Color::LIMEGREEN,
-                    );
+                    draw_ground(&mut d3d);
 
                     // Draw walls
-                    // TODO Move to drawing.rs
-                    let walls = [
-                        // West
-                        (
-                            Vector3::new(-WALL_POS_Z, WALL_POS_Y, WALL_POS_X),
-                            Vector3::new(WALL_SIZE_X, WALL_SIZE_Y, WALL_SIZE_Z),
-                        ),
-                        // East
-                        (
-                            Vector3::new(WALL_POS_Z, WALL_POS_Y, WALL_POS_X),
-                            Vector3::new(WALL_SIZE_X, WALL_SIZE_Y, WALL_SIZE_Z),
-                        ),
-                        // South
-                        (
-                            Vector3::new(WALL_POS_X, WALL_POS_Y, WALL_POS_Z),
-                            Vector3::new(WALL_SIZE_Z, WALL_SIZE_Y, WALL_SIZE_X),
-                        ),
-                        // North
-                        (
-                            Vector3::new(WALL_POS_X, WALL_POS_Y, -WALL_POS_Z),
-                            Vector3::new(WALL_SIZE_Z, WALL_SIZE_Y, WALL_SIZE_X),
-                        ),
-                    ];
-
-                    for (pos, size) in walls {
-                        d3d.draw_cube(
-                            Vector3::new(pos.x / 2.0, pos.y / 2.0, pos.z / 2.0),
-                            size.x,
-                            size.y,
-                            size.z,
-                            Color::DARKGRAY,
-                        );
-                    }
+                    draw_walls(&mut d3d);
 
                     // Draw forest
                     draw_forest(&mut d3d, &ecs_world, &physics_world);
