@@ -32,9 +32,6 @@ fn main() {
     // Create mouse look
     let mut mouse_look = MouseLook::new(MOUSE_SENSITIVITY);
 
-    // Disable cursor
-    rl.disable_cursor();
-
     // Set FPS
     rl.set_target_fps(60);
 
@@ -85,6 +82,14 @@ fn main() {
         match current_screen {
             // Title screen
             GameState::Title => {
+                // If cursor is hidden then enable it
+                if rl.is_cursor_hidden() {
+                    rl.enable_cursor();
+                }
+
+                // Set text style for GUI
+                rl.gui_set_style(GuiControl::DEFAULT, GuiDefaultProperty::TEXT_SIZE, 30);
+
                 // Press Enter or Space to continue
                 if rl.is_key_pressed(KeyboardKey::KEY_ENTER)
                     || rl.is_key_pressed(KeyboardKey::KEY_SPACE)
@@ -99,17 +104,22 @@ fn main() {
                 // Clear frame
                 d.clear_background(Color::WHITE);
 
-                // Draw welcome message
-                d.draw_text(
-                    "Welcome! Press ENTER or SPACE to continue...",
-                    40,
-                    40,
-                    10,
-                    Color::BLACK,
-                );
+                // Start button
+                if d.gui_button(Rectangle::new(300.0, 150.0, 200.0, 50.0), "START") {
+                    current_screen = GameState::Game;
+                }
+
+                // Quit button
+                if d.gui_button(Rectangle::new(300.0, 250.0, 200.0, 50.0), "QUIT") {
+                    break;
+                }
             }
             // Game
             GameState::Game => {
+                // If cursor is showing then disable it
+                if !rl.is_cursor_hidden() {
+                    rl.disable_cursor();
+                }
                 // Get mouse info
                 mouse_look.update_from_mouse(&rl);
 
