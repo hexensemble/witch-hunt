@@ -107,6 +107,29 @@ pub fn draw_balls(
     }
 }
 
+// Draw witches
+pub fn draw_witches(
+    d3d: &mut RaylibMode3D<RaylibDrawHandle>,
+    ecs_world: &World,
+    physics_world: &PhysicsWorld,
+) {
+    for (_, witch) in ecs_world.query::<&Witch>().iter() {
+        // Get position from physics world
+        if let Some(body) = physics_world.bodies.get(witch.body_handle) {
+            let position = body.translation();
+
+            // Draw witch
+            d3d.draw_cube(
+                Vector3::new(position.x, position.y, position.z),
+                witch.width,
+                witch.height,
+                witch.width,
+                witch.color,
+            );
+        }
+    }
+}
+
 //Draw HUD
 pub fn draw_hud(d: &mut RaylibDrawHandle) {
     d.draw_rectangle(10, 10, 220, 70, Color::GRAY);

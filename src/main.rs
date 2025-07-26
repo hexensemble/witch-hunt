@@ -73,6 +73,14 @@ fn main() {
         NUM_OF_BALLS,
     );
 
+    // Generate witches
+    generate_witches(
+        &mut ecs_world,
+        &mut positions,
+        &mut physics_world,
+        NUM_OF_WITCHES,
+    );
+
     // Set game state to title screen
     let mut current_screen = GameState::Title;
 
@@ -163,6 +171,9 @@ fn main() {
 
                     // Draw balls
                     draw_balls(&mut d3d, &ecs_world, &physics_world);
+
+                    // Draw witches
+                    draw_witches(&mut d3d, &ecs_world, &physics_world);
 
                     // Draw collision wireframes
                     debug_colliders(&mut d3d, &physics_world, Color::RED);

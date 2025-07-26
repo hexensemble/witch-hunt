@@ -30,3 +30,6 @@ pub const NUM_OF_TREES: u32 = 25;
 
 // Ball count
 pub const NUM_OF_BALLS: u32 = 4;
+
+// Witch count
+pub const NUM_OF_WITCHES: u32 = 1;

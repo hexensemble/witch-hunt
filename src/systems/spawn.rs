@@ -228,3 +228,52 @@ pub fn generate_balls(
         },
     );
 }
+
+// Generate witches
+pub fn generate_witches(
+    ecs_world: &mut World,
+    positions: &mut Vec<Vector3>,
+    physics_world: &mut PhysicsWorld,
+    num_of_witches: u32,
+) {
+    generate_entities(
+        ecs_world,
+        positions,
+        physics_world,
+        num_of_witches,
+        |position, p_world, _| {
+            // Set witch width and height
+            let width = 1.0;
+            let height = 2.0;
+
+            // Create body
+            let body = RigidBodyBuilder::dynamic()
+                .translation(vector![position.x, height / 2.0, position.z])
+                .ccd_enabled(true)
+                .build();
+
+            // Insert body into physics world and get body handle
+            let body_handle = p_world.bodies.insert(body);
+
+            // Create collider
+            let collider = ColliderBuilder::cuboid(width / 2.0, height / 2.0, width / 2.0).build();
+
+            // Insert collider into physics world, attach it to body, and get collider handle
+            let collider_handle =
+                p_world
+                    .colliders
+                    .insert_with_parent(collider, body_handle, &mut p_world.bodies);
+
+            // Create witch
+            let witch = Witch {
+                width,
+                height,
+                body_handle,
+                color: Color::PURPLE,
+            };
+
+            // Return component bundle and collider handle
+            ((witch, Nothing), Some(collider_handle))
+        },
+    );
+}

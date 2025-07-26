@@ -23,6 +23,14 @@ pub struct Ball {
     pub color: Color,
 }
 
+// Witch component
+pub struct Witch {
+    pub width: f32,
+    pub height: f32,
+    pub body_handle: RigidBodyHandle,
+    pub color: Color,
+}
+
 // Ground component
 pub struct Ground {
     pub body_handle: RigidBodyHandle,
