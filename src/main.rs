@@ -18,7 +18,7 @@ fn main() {
     // Create Raylib handle and thread
     let (mut rl, thread) = raylib::init()
         .size(WINDOW_WIDTH, WINDOW_HEIGHT)
-        .title("Raylib Test")
+        .title("Witch Hunt")
         .build();
 
     // Create camera
