@@ -4,6 +4,7 @@ use map::*;
 use physics::*;
 use raylib::prelude::*;
 use settings::*;
+use systems::ai::*;
 use systems::drawing::*;
 use systems::player::*;
 use systems::spawn::*;
@@ -150,6 +151,12 @@ fn main() {
                 } else {
                     // Update physics world
                     physics_world.step();
+                }
+
+                // Update witch AI
+                if update_witch_ai(&mut ecs_world, &mut physics_world) {
+                    println!("GAME OVER!");
+                    break;
                 }
 
                 // Begin drawing frame

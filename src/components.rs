@@ -28,7 +28,10 @@ pub struct Witch {
     pub width: f32,
     pub height: f32,
     pub body_handle: RigidBodyHandle,
+    pub collider_handle: ColliderHandle,
     pub color: Color,
+    pub state: WitchState,
+    pub target: Vector3,
 }
 
 // Ground component
@@ -43,3 +46,9 @@ pub struct Wall {
 
 // Nothing component
 pub struct Nothing;
+
+// Witch behavior state
+pub enum WitchState {
+    Patrolling,
+    Chasing,
+}

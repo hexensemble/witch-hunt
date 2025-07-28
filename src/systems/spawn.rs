@@ -1,5 +1,6 @@
 use crate::components::*;
 use crate::physics::*;
+use crate::systems::ai::*;
 use hecs::{Bundle, World};
 use rand::{rngs::ThreadRng, Rng};
 use rapier3d::prelude::*;
@@ -269,7 +270,10 @@ pub fn generate_witches(
                 width,
                 height,
                 body_handle,
+                collider_handle,
                 color: Color::PURPLE,
+                state: WitchState::Patrolling,
+                target: generate_patrol_point(),
             };
 
             // Return component bundle and collider handle
