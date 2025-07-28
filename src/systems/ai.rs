@@ -36,7 +36,7 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
             None => continue,
         };
 
-        // Should witch enter chase state?
+        // Set 'should chase' flag to false
         let mut should_chase = false;
 
         // Get direction from witch to player
@@ -85,12 +85,12 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
 
         // Switch state check
         match (should_chase, &witch.state) {
-            // Witch should chase and is currently patrolling
+            // If 'should chase' flag is true and witch is currently patrolling
             (true, WitchState::Patrolling) => {
                 println!("👁️ Witch spotted the player. Switching to chase.");
                 witch.state = WitchState::Chasing;
             }
-            // Witch shouldn't chase and is currently chasing
+            // If 'should chase' flag is false and witch is currently chasing
             (false, WitchState::Chasing) => {
                 println!("🤫 Witch resumes patrol.");
                 witch.state = WitchState::Patrolling;
@@ -115,6 +115,7 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
             // .norm() returns the length (magnitude) of the direction vector
             let distance_to_target = direction_to_target.norm();
 
+            // If target is more than 1.0 away then head towards it
             if distance_to_target > 1.0 {
                 // Get direction without a length
                 let direction_to_target_normalized = direction_to_target / distance_to_target;
@@ -128,7 +129,7 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
                 // Set witch in motion
                 witch_body.set_linvel(direction_to_target_normalized * speed, true);
             }
-            // If witch is in Patrolling state, then pick a new point
+            // Otherwise (and if witch is in Patrolling state) pick a new point
             else if matches!(witch.state, WitchState::Patrolling) {
                 witch.target = generate_patrol_point();
                 println!("🚶 Witch picked new patrol point: {:?}", witch.target);
