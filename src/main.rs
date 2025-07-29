@@ -1,6 +1,5 @@
 use components::*;
 use hecs::World;
-use map::*;
 use physics::*;
 use raylib::prelude::*;
 use settings::*;
@@ -8,9 +7,9 @@ use systems::ai::*;
 use systems::drawing::*;
 use systems::player::*;
 use systems::spawn::*;
+use systems::terrain::*;
 
 mod components;
-mod map;
 mod physics;
 mod settings;
 mod systems;
@@ -42,8 +41,8 @@ fn main() {
     // Create physics world
     let mut physics_world = PhysicsWorld::new();
 
-    // Create map
-    generate_map(&mut ecs_world, &mut physics_world);
+    // Create terrain
+    generate_terrain(&mut ecs_world, &mut physics_world);
 
     // List of entity positions for checking spawn locations don't duplicate
     let mut positions: Vec<Vector3> = Vec::new();

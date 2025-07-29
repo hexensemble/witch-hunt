@@ -5,12 +5,12 @@ use hecs::{Bundle, World};
 use rapier3d::prelude::*;
 use raylib::prelude::*;
 
-// Generate map
-pub fn generate_map(ecs_world: &mut World, physics_world: &mut PhysicsWorld) {
+// Generate terrain
+pub fn generate_terrain(ecs_world: &mut World, physics_world: &mut PhysicsWorld) {
     // Generate ground
     let ground_position = Vector3::new(GROUND_POS_X, -GROUND_POS_Y, GROUND_POS_Z);
     let ground_size = Vector3::new(GROUND_SIZE_X, GROUND_SIZE_Y, GROUND_SIZE_Z);
-    generate_terrain(
+    generate_terrain_piece(
         ecs_world,
         physics_world,
         ground_position,
@@ -47,7 +47,7 @@ pub fn generate_map(ecs_world: &mut World, physics_world: &mut PhysicsWorld) {
     ];
 
     for (pos, size) in walls {
-        generate_terrain(ecs_world, physics_world, pos, size, |body_handle| {
+        generate_terrain_piece(ecs_world, physics_world, pos, size, |body_handle| {
             let wall = Wall { body_handle };
 
             (wall, Nothing)
@@ -55,8 +55,8 @@ pub fn generate_map(ecs_world: &mut World, physics_world: &mut PhysicsWorld) {
     }
 }
 
-// Generate terrain
-fn generate_terrain<F, B>(
+// Generate terrain peice
+fn generate_terrain_piece<F, B>(
     ecs_world: &mut World,
     physics_world: &mut PhysicsWorld,
     position: Vector3,
