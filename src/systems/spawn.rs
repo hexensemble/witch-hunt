@@ -144,11 +144,15 @@ pub fn generate_trees(
         grid,
         num_of_trees,
         |position, p_world, rng| {
-            // Generate random tree size and color
-            let even_widths = [1.0, 3.0];
-            let leaf_width: f32 = *even_widths.choose(rng).unwrap();
-            let leaf_height: f32 = rng.random_range(1.0..=8.0);
-            let trunk_height: f32 = rng.random_range(1.0..=2.0);
+            // Generate random tree size
+            let widths = [1.0, 3.0];
+            let heights = [3.0, 5.0, 7.0];
+
+            let leaf_width: f32 = *widths.choose(rng).unwrap();
+            let leaf_height: f32 = *heights.choose(rng).unwrap();
+            let trunk_height: f32 = 1.0;
+
+            // Generate random color
             let color_picker = rng.random_range(0..=1);
 
             // Apply tree color
@@ -159,7 +163,7 @@ pub fn generate_trees(
             };
 
             // Get tree size for collider
-            let half_width = leaf_width.max(0.25) / 2.0;
+            let half_width = leaf_width / 2.0;
             let total_height = trunk_height + leaf_height;
 
             // Set spawn height
