@@ -6,6 +6,8 @@ use crate::systems::drawing::*;
 use crate::systems::player::*;
 use crate::systems::spawn::*;
 use crate::systems::terrain::*;
+use crate::world::grid::*;
+use crate::world::loader::*;
 use crate::State;
 use hecs::World;
 use raylib::prelude::*;
@@ -37,45 +39,55 @@ pub fn new_game() -> Game {
     // Create physics world
     let mut physics_world = PhysicsWorld::new();
 
-    // Create terrain
-    generate_terrain(&mut ecs_world, &mut physics_world);
+    // Load tile map and get grid
+    match load_tiled_map("map_01.tmx") {
+        Ok(grid) => {
+            if DEBUG_MODE {
+                println!("Map loaded successfully!");
+            }
 
-    // List of entity positions for checking spawn locations don't duplicate
-    let mut positions: Vec<Vector3> = Vec::new();
+            // Generate blocks
+            generate_blocks(&mut ecs_world, &mut physics_world, &grid);
 
-    // Generate player
-    let player_start_position = generate_player(&mut ecs_world, &mut positions, &mut physics_world);
+            // List of entity positions for checking spawn locations don't duplicate
+            let mut positions: Vec<GridCoord> = Vec::new();
 
-    // Set camera position to player start position
-    camera.position = Vector3::new(
-        player_start_position.x,
-        player_start_position.y,
-        player_start_position.z,
-    );
+            // Generate player
+            let player_start_position =
+                generate_player(&mut ecs_world, &mut physics_world, &grid, &mut positions);
 
-    // Generate trees
-    generate_trees(
-        &mut ecs_world,
-        &mut positions,
-        &mut physics_world,
-        NUM_OF_TREES,
-    );
+            // Set camera position to player start position
+            camera.position = player_start_position.to_raylib_vec3(grid.tile_size);
 
-    // Generate balls
-    generate_balls(
-        &mut ecs_world,
-        &mut positions,
-        &mut physics_world,
-        NUM_OF_BALLS,
-    );
+            // Generate trees
+            generate_trees(
+                &mut ecs_world,
+                &mut physics_world,
+                &grid,
+                &mut positions,
+                NUM_OF_TREES,
+            );
 
-    // Generate witches
-    generate_witches(
-        &mut ecs_world,
-        &mut positions,
-        &mut physics_world,
-        NUM_OF_WITCHES,
-    );
+            // Generate balls
+            generate_balls(
+                &mut ecs_world,
+                &mut physics_world,
+                &grid,
+                &mut positions,
+                NUM_OF_BALLS,
+            );
+
+            // Generate witches
+            generate_witches(
+                &mut ecs_world,
+                &mut physics_world,
+                &grid,
+                &mut positions,
+                NUM_OF_WITCHES,
+            );
+        }
+        Err(e) => eprintln!("Error loading map: {e}"),
+    }
 
     Game {
         ecs_world,
@@ -135,11 +147,8 @@ pub fn render(rl: &mut RaylibHandle, thread: &RaylibThread, game: &mut Game) {
 
     // Draw 3D objects
     d.draw_mode3D(game.camera, |mut d3d, _camera| {
-        // Draw ground
-        draw_ground(&mut d3d);
-
-        // Draw walls
-        draw_walls(&mut d3d);
+        // Draw blocks
+        draw_blocks(&mut d3d, &game.ecs_world, &game.physics_world);
 
         // Draw forest
         draw_forest(&mut d3d, &game.ecs_world, &game.physics_world);
@@ -151,7 +160,9 @@ pub fn render(rl: &mut RaylibHandle, thread: &RaylibThread, game: &mut Game) {
         draw_witches(&mut d3d, &game.ecs_world, &game.physics_world);
 
         // Draw collision wireframes
-        debug_colliders(&mut d3d, &game.physics_world, Color::RED);
+        if DEBUG_MODE {
+            debug_colliders(&mut d3d, &game.physics_world, Color::RED);
+        }
     });
 
     // Draw HUD

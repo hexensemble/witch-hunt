@@ -34,14 +34,12 @@ pub struct Witch {
     pub target: Vector3,
 }
 
-// Ground component
-pub struct Ground {
+// Block component
+pub struct Block {
+    pub width: f32,
+    pub height: f32,
     pub body_handle: RigidBodyHandle,
-}
-
-// Wall component
-pub struct Wall {
-    pub body_handle: RigidBodyHandle,
+    pub color: Color,
 }
 
 // Nothing component

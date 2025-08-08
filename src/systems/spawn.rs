@@ -1,7 +1,9 @@
 use crate::components::*;
 use crate::physics::*;
 use crate::systems::ai::*;
+use crate::world::grid::*;
 use hecs::{Bundle, World};
+use rand::seq::IndexedRandom;
 use rand::{rngs::ThreadRng, Rng};
 use rapier3d::prelude::*;
 use raylib::prelude::*;
@@ -9,12 +11,13 @@ use raylib::prelude::*;
 // Generate entities
 fn generate_entities<F, B>(
     ecs_world: &mut World,
-    positions: &mut Vec<Vector3>,
     physics_world: &mut PhysicsWorld,
+    grid: &Grid,
+    positions: &mut Vec<GridCoord>,
     entity_count: u32,
     mut generator_fn: F,
 ) where
-    F: FnMut(Vector3, &mut PhysicsWorld, &mut ThreadRng) -> (B, Option<ColliderHandle>),
+    F: FnMut(&mut GridCoord, &mut PhysicsWorld, &mut ThreadRng) -> (B, Option<ColliderHandle>),
     B: Bundle,
 {
     //RNG
@@ -25,11 +28,22 @@ fn generate_entities<F, B>(
 
     while generated < entity_count {
         // Generate random X and Z coords
-        let x = rng.random_range(-25.0..=25.0);
-        let z = rng.random_range(-25.0..=25.0);
+        // At least 2.0 in from edge of World
+        // Rounded up to match grid usize
+        let x: f32 = rng.random_range(2.0..(grid.width as f32 - 2.0)).ceil();
+        let y: f32 = 0.0;
+        let z: f32 = rng.random_range(2.0..(grid.height as f32 - 2.0)).ceil();
 
         // Create position with generated coords
-        let position = Vector3::new(x, 0.0, z);
+        let mut position = GridCoord {
+            x: x as usize,
+            y: y as usize,
+            z: z as usize,
+        };
+
+        // Create entity component bundle and collider
+        // Exposes 'postition', 'physics_world', and 'rng' variables out to the closure
+        let (entity_bundle, maybe_collider) = generator_fn(&mut position, physics_world, &mut rng);
 
         // Check if positions list already has an entity at these coords, if so skip this iteration
         // and move on to the next, otherwise carry on
@@ -42,10 +56,6 @@ fn generate_entities<F, B>(
 
         // Add coords to positions list
         positions.push(position);
-
-        // Create entity component bundle and collider
-        // Exposes 'postition', 'physics_world', and 'rng' variables out to the closure
-        let (entity_bundle, maybe_collider) = generator_fn(position, physics_world, &mut rng);
 
         // Spawn entity into the world
         let entity = ecs_world.spawn(entity_bundle);
@@ -65,28 +75,34 @@ fn generate_entities<F, B>(
 // Generate player
 pub fn generate_player(
     ecs_world: &mut World,
-    positions: &mut Vec<Vector3>,
     physics_world: &mut PhysicsWorld,
-) -> Vector3 {
+    grid: &Grid,
+    positions: &mut Vec<GridCoord>,
+) -> GridCoord {
     // Create player start position initialized to zero
-    let mut player_start_position = Vector3::zero();
+    let mut player_start_position = GridCoord::zero();
 
     generate_entities(
         ecs_world,
-        positions,
         physics_world,
+        grid,
+        positions,
         1,
         |position, p_world, _| {
             // Set player start position to generated start position
-            player_start_position = position;
+            player_start_position = *position;
 
             // Set player width and height
-            let width = 1.0;
-            let height = 2.0;
+            let width = grid.tile_size;
+            let height = grid.tile_size * 2.0;
+            let depth = grid.tile_size;
+
+            // Set spawn height
+            position.y = 2;
 
             // Create body
             let body = RigidBodyBuilder::dynamic()
-                .translation(vector![position.x, height / 2.0, position.z])
+                .translation(position.to_rapier3d_vec(grid.tile_size))
                 .lock_rotations()
                 .linear_damping(4.0) // Slow down when keys are released
                 .ccd_enabled(true)
@@ -96,7 +112,8 @@ pub fn generate_player(
             let body_handle = p_world.bodies.insert(body);
 
             // Create collider
-            let collider = ColliderBuilder::cuboid(width / 2.0, height / 2.0, width / 2.0).build();
+            let collider =
+                ColliderBuilder::round_cuboid(width / 2.0, height / 2.0, depth / 2.0, 0.1).build();
 
             // Insert collider into physics world, attach it to body, and get collider handle
             let collider_handle =
@@ -119,20 +136,23 @@ pub fn generate_player(
 // Generate trees
 pub fn generate_trees(
     ecs_world: &mut World,
-    positions: &mut Vec<Vector3>,
     physics_world: &mut PhysicsWorld,
+    grid: &Grid,
+    positions: &mut Vec<GridCoord>,
     num_of_trees: u32,
 ) {
     generate_entities(
         ecs_world,
-        positions,
         physics_world,
+        grid,
+        positions,
         num_of_trees,
         |position, p_world, rng| {
             // Generate random tree size and color
-            let leaf_width: f32 = rng.random_range(1.0..=3.0);
-            let leaf_height = rng.random_range(2.0..=4.0);
-            let trunk_height = rng.random_range(0.8..=1.5);
+            let even_widths = [1.0, 3.0];
+            let leaf_width: f32 = *even_widths.choose(rng).unwrap();
+            let leaf_height: f32 = rng.random_range(1.0..=8.0);
+            let trunk_height: f32 = rng.random_range(1.0..=2.0);
             let color_picker = rng.random_range(0..=1);
 
             // Apply tree color
@@ -146,9 +166,18 @@ pub fn generate_trees(
             let half_width = leaf_width.max(0.25) / 2.0;
             let total_height = trunk_height + leaf_height;
 
+            // Set spawn height
+            position.y = 0;
+
             // Create body
+            // Center the collider vertically
             let body = RigidBodyBuilder::fixed()
-                .translation(vector![position.x, total_height / 2.0, position.z])
+                .translation(position.to_rapier3d_vec_new(
+                    position.x,
+                    (total_height / 2.0) as usize,
+                    position.z,
+                    grid.tile_size,
+                ))
                 .build();
 
             // Insert body into physics world and get body handle
@@ -183,22 +212,27 @@ pub fn generate_trees(
 // Generate balls
 pub fn generate_balls(
     ecs_world: &mut World,
-    positions: &mut Vec<Vector3>,
     physics_world: &mut PhysicsWorld,
+    grid: &Grid,
+    positions: &mut Vec<GridCoord>,
     num_of_balls: u32,
 ) {
     generate_entities(
         ecs_world,
-        positions,
         physics_world,
+        grid,
+        positions,
         num_of_balls,
         |position, p_world, _| {
             // Ball size
             let ball_size = 0.5;
 
+            // Set spawn height
+            position.y = 10;
+
             // Create body
             let body = RigidBodyBuilder::dynamic()
-                .translation(vector![position.x, 10.0, position.z])
+                .translation(position.to_rapier3d_vec(grid.tile_size))
                 .ccd_enabled(true)
                 .build();
 
@@ -233,23 +267,29 @@ pub fn generate_balls(
 // Generate witches
 pub fn generate_witches(
     ecs_world: &mut World,
-    positions: &mut Vec<Vector3>,
     physics_world: &mut PhysicsWorld,
+    grid: &Grid,
+    positions: &mut Vec<GridCoord>,
     num_of_witches: u32,
 ) {
     generate_entities(
         ecs_world,
-        positions,
         physics_world,
+        grid,
+        positions,
         num_of_witches,
         |position, p_world, _| {
             // Set witch width and height
-            let width = 1.0;
-            let height = 2.0;
+            let width = grid.tile_size;
+            let height = grid.tile_size * 2.0;
+            let depth = grid.tile_size;
+
+            // Set spawn height
+            position.y = 2;
 
             // Create body
             let body = RigidBodyBuilder::dynamic()
-                .translation(vector![position.x, height / 2.0, position.z])
+                .translation(position.to_rapier3d_vec(grid.tile_size))
                 .ccd_enabled(true)
                 .build();
 
@@ -257,7 +297,8 @@ pub fn generate_witches(
             let body_handle = p_world.bodies.insert(body);
 
             // Create collider
-            let collider = ColliderBuilder::cuboid(width / 2.0, height / 2.0, width / 2.0).build();
+            let collider =
+                ColliderBuilder::round_cuboid(width / 2.0, height / 2.0, depth / 2.0, 0.1).build();
 
             // Insert collider into physics world, attach it to body, and get collider handle
             let collider_handle =

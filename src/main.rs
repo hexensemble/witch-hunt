@@ -7,6 +7,7 @@ mod physics;
 mod settings;
 mod systems;
 mod title;
+mod world;
 
 // States
 pub enum State {

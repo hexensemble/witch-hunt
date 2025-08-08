@@ -1,52 +1,29 @@
 use crate::components::*;
 use crate::physics::*;
-use crate::settings::*;
 use hecs::World;
-use rapier3d::math::Isometry;
+use rapier3d::prelude::*;
 use raylib::prelude::*;
 
-// Draw ground
-pub fn draw_ground(d3d: &mut RaylibMode3D<RaylibDrawHandle>) {
-    d3d.draw_plane(
-        Vector3::new(GROUND_POS_X, GROUND_POS_Y, GROUND_POS_Z),
-        Vector2::new(GROUND_SIZE_X, GROUND_SIZE_Z),
-        Color::LIMEGREEN,
-    );
-}
+// Draw blocks
+pub fn draw_blocks(
+    d3d: &mut RaylibMode3D<RaylibDrawHandle>,
+    ecs_world: &World,
+    physics_world: &PhysicsWorld,
+) {
+    for (_, block) in ecs_world.query::<&Block>().iter() {
+        if let Some(body) = physics_world.bodies.get(block.body_handle) {
+            // Get position from physics world
+            let position = body.translation();
 
-// Draw walls
-pub fn draw_walls(d3d: &mut RaylibMode3D<RaylibDrawHandle>) {
-    let walls = [
-        // West
-        (
-            Vector3::new(-WALL_POS_Z, WALL_POS_Y, WALL_POS_X),
-            Vector3::new(WALL_SIZE_X, WALL_SIZE_Y, WALL_SIZE_Z),
-        ),
-        // East
-        (
-            Vector3::new(WALL_POS_Z, WALL_POS_Y, WALL_POS_X),
-            Vector3::new(WALL_SIZE_X, WALL_SIZE_Y, WALL_SIZE_Z),
-        ),
-        // South
-        (
-            Vector3::new(WALL_POS_X, WALL_POS_Y, WALL_POS_Z),
-            Vector3::new(WALL_SIZE_Z, WALL_SIZE_Y, WALL_SIZE_X),
-        ),
-        // North
-        (
-            Vector3::new(WALL_POS_X, WALL_POS_Y, -WALL_POS_Z),
-            Vector3::new(WALL_SIZE_Z, WALL_SIZE_Y, WALL_SIZE_X),
-        ),
-    ];
-
-    for (pos, size) in walls {
-        d3d.draw_cube(
-            Vector3::new(pos.x / 2.0, pos.y / 2.0, pos.z / 2.0),
-            size.x,
-            size.y,
-            size.z,
-            Color::DARKGRAY,
-        );
+            // Draw block
+            d3d.draw_cube(
+                Vector3::new(position.x, position.y, position.z),
+                block.width,
+                block.height,
+                block.width,
+                block.color,
+            );
+        }
     }
 }
 
@@ -92,7 +69,7 @@ pub fn draw_balls(
     ecs_world: &World,
     physics_world: &PhysicsWorld,
 ) {
-    for (_, ball) in ecs_world.query::<&Ball>().iter() {
+    for (_, ball) in ecs_world.query::<&crate::components::Ball>().iter() {
         // Get position from physics world
         if let Some(body) = physics_world.bodies.get(ball.body_handle) {
             let position = body.translation();
@@ -169,6 +146,15 @@ pub fn debug_colliders(
             );
         } else if let Some(ball) = shape.as_ball() {
             d3d.draw_sphere_wires(pos, ball.radius, 8, 8, color);
+        } else if let Some(round_cuboid) = shape.as_round_cuboid() {
+            let half_extents = round_cuboid.inner_shape.half_extents;
+            d3d.draw_cube_wires(
+                pos,
+                half_extents.x * 2.0,
+                half_extents.y * 2.0,
+                half_extents.z * 2.0,
+                color,
+            );
         } else {
             // Add support for other shapes if needed
             d3d.draw_text("Unsupported shape", 10, 10, 20, color);

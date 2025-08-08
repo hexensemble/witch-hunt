@@ -1,5 +1,6 @@
 use crate::components::*;
 use crate::physics::PhysicsWorld;
+use crate::settings::*;
 use hecs::World;
 use rand::Rng;
 use rapier3d::prelude as rap3d;
@@ -87,12 +88,18 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
         match (should_chase, &witch.state) {
             // If 'should chase' flag is true and witch is currently patrolling
             (true, WitchState::Patrolling) => {
-                println!("👁️ Witch spotted the player. Switching to chase.");
+                if DEBUG_MODE {
+                    println!("👁️ Witch spotted the player. Switching to chase.");
+                }
+
                 witch.state = WitchState::Chasing;
             }
             // If 'should chase' flag is false and witch is currently chasing
             (false, WitchState::Chasing) => {
-                println!("🤫 Witch resumes patrol.");
+                if DEBUG_MODE {
+                    println!("🤫 Witch resumes patrol.");
+                }
+
                 witch.state = WitchState::Patrolling;
                 witch.target = generate_patrol_point();
             }
@@ -131,8 +138,11 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
             }
             // Otherwise (and if witch is in Patrolling state) pick a new point
             else if matches!(witch.state, WitchState::Patrolling) {
+                if DEBUG_MODE {
+                    println!("🚶 Witch picked new patrol point: {:?}", witch.target);
+                }
+
                 witch.target = generate_patrol_point();
-                println!("🚶 Witch picked new patrol point: {:?}", witch.target);
             }
 
             // If witch is in chasing state and it's reached the target, game over
