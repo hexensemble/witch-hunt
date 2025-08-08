@@ -10,8 +10,8 @@ pub fn draw_blocks(
     ecs_world: &World,
     physics_world: &PhysicsWorld,
 ) {
-    for (_, block) in ecs_world.query::<&Block>().iter() {
-        if let Some(body) = physics_world.bodies.get(block.body_handle) {
+    for (_, (block, body_handle)) in ecs_world.query::<(&Block, &BodyHandle)>().iter() {
+        if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
             // Get position from physics world
             let position = body.translation();
 
@@ -33,9 +33,9 @@ pub fn draw_forest(
     ecs_world: &World,
     physics_world: &PhysicsWorld,
 ) {
-    for (_, tree) in ecs_world.query::<&Tree>().iter() {
+    for (_, (tree, body_handle)) in ecs_world.query::<(&Tree, &BodyHandle)>().iter() {
         // Get position from physics world
-        if let Some(body) = physics_world.bodies.get(tree.body_handle) {
+        if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
             let position = body.translation();
 
             // Draw leaves
@@ -69,9 +69,12 @@ pub fn draw_balls(
     ecs_world: &World,
     physics_world: &PhysicsWorld,
 ) {
-    for (_, ball) in ecs_world.query::<&crate::components::Ball>().iter() {
+    for (_, (ball, body_handle)) in ecs_world
+        .query::<(&crate::components::Ball, &BodyHandle)>()
+        .iter()
+    {
         // Get position from physics world
-        if let Some(body) = physics_world.bodies.get(ball.body_handle) {
+        if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
             let position = body.translation();
 
             // Draw ball
@@ -90,9 +93,9 @@ pub fn draw_witches(
     ecs_world: &World,
     physics_world: &PhysicsWorld,
 ) {
-    for (_, witch) in ecs_world.query::<&Witch>().iter() {
+    for (_, (witch, body_handle)) in ecs_world.query::<(&Witch, &BodyHandle)>().iter() {
         // Get position from physics world
-        if let Some(body) = physics_world.bodies.get(witch.body_handle) {
+        if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
             let position = body.translation();
 
             // Draw witch

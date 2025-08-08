@@ -15,8 +15,10 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
 
     // Get player position
     let player_position = {
-        if let Some((_, player)) = ecs_world.query::<&Player>().iter().next() {
-            if let Some(player_body) = physics_world.bodies.get(player.body_handle) {
+        if let Some((_, (_, body_handle))) =
+            ecs_world.query::<(&Player, &BodyHandle)>().iter().next()
+        {
+            if let Some(player_body) = physics_world.bodies.get(body_handle.body_handle) {
                 *player_body.translation()
             } else {
                 eprintln!("Couldn't find Player while attempting call: update_witch_ai. Did player spawn?");
@@ -30,9 +32,9 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
         }
     };
 
-    for (_, witch) in ecs_world.query::<&mut Witch>().iter() {
+    for (_, (witch, body_handle)) in ecs_world.query::<(&mut Witch, &BodyHandle)>().iter() {
         // Get witch position
-        let witch_position = match physics_world.bodies.get(witch.body_handle) {
+        let witch_position = match physics_world.bodies.get(body_handle.body_handle) {
             Some(body) => *body.translation(),
             None => continue,
         };
@@ -108,7 +110,7 @@ pub fn update_witch_ai(ecs_world: &mut World, physics_world: &mut PhysicsWorld) 
 
         // Movement logic
         // Get witch body handle
-        if let Some(witch_body) = physics_world.bodies.get_mut(witch.body_handle) {
+        if let Some(witch_body) = physics_world.bodies.get_mut(body_handle.body_handle) {
             // Get target based on witch state
             let target = match witch.state {
                 WitchState::Chasing => player_position,

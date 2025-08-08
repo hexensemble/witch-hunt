@@ -73,6 +73,15 @@ impl GridCoord {
             self.z as f32 * tile_size,
         ]
     }
+
+    // Rapier3D Vector to grid coordinates
+    pub fn from_rapier3d_vec(vector: Vector<f32>) -> Self {
+        Self {
+            x: vector.x as usize,
+            y: vector.y as usize,
+            z: vector.z as usize,
+        }
+    }
 }
 
 // Tile

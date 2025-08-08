@@ -2,16 +2,13 @@ use rapier3d::prelude::*;
 use raylib::prelude::*;
 
 // Player component
-pub struct Player {
-    pub body_handle: RigidBodyHandle,
-}
+pub struct Player {}
 
 // Tree component
 pub struct Tree {
     pub leaf_width: f32,
     pub leaf_height: f32,
     pub trunk_height: f32,
-    pub body_handle: RigidBodyHandle,
     pub leaf_color: Color,
     pub trunk_color: Color,
 }
@@ -19,7 +16,6 @@ pub struct Tree {
 // Ball component
 pub struct Ball {
     pub size: f32,
-    pub body_handle: RigidBodyHandle,
     pub color: Color,
 }
 
@@ -27,7 +23,6 @@ pub struct Ball {
 pub struct Witch {
     pub width: f32,
     pub height: f32,
-    pub body_handle: RigidBodyHandle,
     pub collider_handle: ColliderHandle,
     pub color: Color,
     pub state: WitchState,
@@ -38,12 +33,13 @@ pub struct Witch {
 pub struct Block {
     pub width: f32,
     pub height: f32,
-    pub body_handle: RigidBodyHandle,
     pub color: Color,
 }
 
-// Nothing component
-pub struct Nothing;
+// Body Handle component
+pub struct BodyHandle {
+    pub body_handle: RigidBodyHandle,
+}
 
 // Witch behavior state
 pub enum WitchState {

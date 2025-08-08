@@ -9,11 +9,11 @@ use raylib::prelude::*;
 pub fn handle_player_movement(
     physics_world: &mut PhysicsWorld,
     rl: &RaylibHandle,
-    player: &Player,
+    body_handle: &BodyHandle,
     yaw: f32,
 ) {
     // Get body for player from physics world
-    if let Some(body) = physics_world.bodies.get_mut(player.body_handle) {
+    if let Some(body) = physics_world.bodies.get_mut(body_handle.body_handle) {
         // Movement vector
         let mut movement: RapierVector3<f32> = RapierVector3::zeros();
 
@@ -48,11 +48,11 @@ pub fn handle_player_movement(
 pub fn update_camera(
     camera: &mut Camera3D,
     physics_world: &PhysicsWorld,
-    player: &Player,
+    body_handle: &BodyHandle,
     yaw: f32,
     pitch: f32,
 ) {
-    if let Some(body) = physics_world.bodies.get(player.body_handle) {
+    if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
         let position = body.translation();
         camera.position = Vector3::new(position.x, position.y + 1.0, position.z);
 

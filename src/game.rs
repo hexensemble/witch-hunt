@@ -6,7 +6,6 @@ use crate::systems::drawing::*;
 use crate::systems::player::*;
 use crate::systems::spawn::*;
 use crate::systems::terrain::*;
-use crate::world::grid::*;
 use crate::world::loader::*;
 use crate::State;
 use hecs::World;
@@ -49,42 +48,20 @@ pub fn new_game() -> Game {
             // Generate blocks
             generate_blocks(&mut ecs_world, &mut physics_world, &grid);
 
-            // List of entity positions for checking spawn locations don't duplicate
-            let mut positions: Vec<GridCoord> = Vec::new();
-
             // Generate player
-            let player_start_position =
-                generate_player(&mut ecs_world, &mut physics_world, &grid, &mut positions);
+            let player_start_position = generate_player(&mut ecs_world, &mut physics_world, &grid);
 
             // Set camera position to player start position
             camera.position = player_start_position.to_raylib_vec3(grid.tile_size);
 
             // Generate trees
-            generate_trees(
-                &mut ecs_world,
-                &mut physics_world,
-                &grid,
-                &mut positions,
-                NUM_OF_TREES,
-            );
+            generate_trees(&mut ecs_world, &mut physics_world, &grid, NUM_OF_TREES);
 
             // Generate balls
-            generate_balls(
-                &mut ecs_world,
-                &mut physics_world,
-                &grid,
-                &mut positions,
-                NUM_OF_BALLS,
-            );
+            generate_balls(&mut ecs_world, &mut physics_world, &grid, NUM_OF_BALLS);
 
             // Generate witches
-            generate_witches(
-                &mut ecs_world,
-                &mut physics_world,
-                &grid,
-                &mut positions,
-                NUM_OF_WITCHES,
-            );
+            generate_witches(&mut ecs_world, &mut physics_world, &grid, NUM_OF_WITCHES);
         }
         Err(e) => eprintln!("Error loading map: {e}"),
     }
@@ -107,9 +84,19 @@ pub fn update(rl: &mut RaylibHandle, next_state: &mut Option<State>, game: &mut 
     game.mouse_look.update_from_mouse(rl);
 
     // Get player from ECS
-    if let Some((_, player)) = game.ecs_world.query::<&mut Player>().iter().next() {
+    if let Some((_, (_, body_handle))) = game
+        .ecs_world
+        .query::<(&mut Player, &BodyHandle)>()
+        .iter()
+        .next()
+    {
         // Handle player movement
-        handle_player_movement(&mut game.physics_world, rl, player, game.mouse_look.yaw());
+        handle_player_movement(
+            &mut game.physics_world,
+            rl,
+            body_handle,
+            game.mouse_look.yaw(),
+        );
 
         // Update physics world
         game.physics_world.step();
@@ -118,7 +105,7 @@ pub fn update(rl: &mut RaylibHandle, next_state: &mut Option<State>, game: &mut 
         update_camera(
             &mut game.camera,
             &game.physics_world,
-            player,
+            body_handle,
             game.mouse_look.yaw(),
             game.mouse_look.pitch(),
         );

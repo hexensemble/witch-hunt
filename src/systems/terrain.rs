@@ -13,25 +13,27 @@ pub fn generate_blocks(ecs_world: &mut World, physics_world: &mut PhysicsWorld, 
                 TileType::Grass => {
                     generate_block(ecs_world, physics_world, grid, tile, |body_handle| {
                         let grass = Block {
-                            body_handle,
                             width: grid.tile_size,
                             height: grid.tile_size,
                             color: Color::LIMEGREEN,
                         };
 
-                        (grass, Nothing)
+                        let body_handle = BodyHandle { body_handle };
+
+                        (grass, body_handle)
                     });
                 }
                 TileType::Stone => {
                     generate_block(ecs_world, physics_world, grid, tile, |body_handle| {
                         let stone = Block {
-                            body_handle,
                             width: grid.tile_size,
                             height: grid.tile_size,
                             color: Color::DARKGRAY,
                         };
 
-                        (stone, Nothing)
+                        let body_handle = BodyHandle { body_handle };
+
+                        (stone, body_handle)
                     });
                 }
                 _ => {}

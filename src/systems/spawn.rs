@@ -13,7 +13,6 @@ fn generate_entities<F, B>(
     ecs_world: &mut World,
     physics_world: &mut PhysicsWorld,
     grid: &Grid,
-    positions: &mut Vec<GridCoord>,
     entity_count: u32,
     mut generator_fn: F,
 ) where
@@ -26,7 +25,7 @@ fn generate_entities<F, B>(
     // Num of entities generated
     let mut generated = 0;
 
-    while generated < entity_count {
+    'outer: while generated < entity_count {
         // Generate random X and Z coords
         // At least 2.0 in from edge of World
         // Rounded up to match grid usize
@@ -45,17 +44,21 @@ fn generate_entities<F, B>(
         // Exposes 'postition', 'physics_world', and 'rng' variables out to the closure
         let (entity_bundle, maybe_collider) = generator_fn(&mut position, physics_world, &mut rng);
 
-        // Check if positions list already has an entity at these coords, if so skip this iteration
-        // and move on to the next, otherwise carry on
-        if positions
-            .iter()
-            .any(|pos| pos.x == position.x && pos.z == position.z)
-        {
-            continue;
-        }
+        // Check no bodies in the way at spawn position
+        for (_, body_handle) in ecs_world.query::<&BodyHandle>().iter() {
+            if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
+                // Get body position from physics world
+                let pos = body.translation();
 
-        // Add coords to positions list
-        positions.push(position);
+                // Convert body positon to grid coordinates
+                let converted_pos = GridCoord::from_rapier3d_vec(*pos);
+
+                // Check and skip this spawn if blocked
+                if position == converted_pos {
+                    continue 'outer;
+                }
+            }
+        }
 
         // Spawn entity into the world
         let entity = ecs_world.spawn(entity_bundle);
@@ -77,57 +80,52 @@ pub fn generate_player(
     ecs_world: &mut World,
     physics_world: &mut PhysicsWorld,
     grid: &Grid,
-    positions: &mut Vec<GridCoord>,
 ) -> GridCoord {
     // Create player start position initialized to zero
     let mut player_start_position = GridCoord::zero();
 
-    generate_entities(
-        ecs_world,
-        physics_world,
-        grid,
-        positions,
-        1,
-        |position, p_world, _| {
-            // Set player start position to generated start position
-            player_start_position = *position;
+    generate_entities(ecs_world, physics_world, grid, 1, |position, p_world, _| {
+        // Set player start position to generated start position
+        player_start_position = *position;
 
-            // Set player width and height
-            let width = grid.tile_size;
-            let height = grid.tile_size * 2.0;
-            let depth = grid.tile_size;
+        // Set player width and height
+        let width = grid.tile_size;
+        let height = grid.tile_size * 2.0;
+        let depth = grid.tile_size;
 
-            // Set spawn height
-            position.y = 2;
+        // Set spawn height
+        position.y = 2;
 
-            // Create body
-            let body = RigidBodyBuilder::dynamic()
-                .translation(position.to_rapier3d_vec(grid.tile_size))
-                .lock_rotations()
-                .linear_damping(4.0) // Slow down when keys are released
-                .ccd_enabled(true)
-                .build();
+        // Create body
+        let body = RigidBodyBuilder::dynamic()
+            .translation(position.to_rapier3d_vec(grid.tile_size))
+            .lock_rotations()
+            .linear_damping(4.0) // Slow down when keys are released
+            .ccd_enabled(true)
+            .build();
 
-            // Insert body into physics world and get body handle
-            let body_handle = p_world.bodies.insert(body);
+        // Insert body into physics world and create BodyHandle component
+        let body_handle = BodyHandle {
+            body_handle: p_world.bodies.insert(body),
+        };
 
-            // Create collider
-            let collider =
-                ColliderBuilder::round_cuboid(width / 2.0, height / 2.0, depth / 2.0, 0.1).build();
+        // Create collider
+        let collider =
+            ColliderBuilder::round_cuboid(width / 2.0, height / 2.0, depth / 2.0, 0.1).build();
 
-            // Insert collider into physics world, attach it to body, and get collider handle
-            let collider_handle =
-                p_world
-                    .colliders
-                    .insert_with_parent(collider, body_handle, &mut p_world.bodies);
+        // Insert collider into physics world, attach it to body, and get collider handle
+        let collider_handle = p_world.colliders.insert_with_parent(
+            collider,
+            body_handle.body_handle,
+            &mut p_world.bodies,
+        );
 
-            // Create player
-            let player = Player { body_handle };
+        // Create Player component
+        let player = Player {};
 
-            // Return component bundle and collider handle
-            ((player, Nothing), Some(collider_handle))
-        },
-    );
+        // Return component bundle and collider handle
+        ((player, body_handle), Some(collider_handle))
+    });
 
     // Return player start position
     player_start_position
@@ -138,14 +136,12 @@ pub fn generate_trees(
     ecs_world: &mut World,
     physics_world: &mut PhysicsWorld,
     grid: &Grid,
-    positions: &mut Vec<GridCoord>,
     num_of_trees: u32,
 ) {
     generate_entities(
         ecs_world,
         physics_world,
         grid,
-        positions,
         num_of_trees,
         |position, p_world, rng| {
             // Generate random tree size and color
@@ -180,31 +176,33 @@ pub fn generate_trees(
                 ))
                 .build();
 
-            // Insert body into physics world and get body handle
-            let body_handle = p_world.bodies.insert(body);
+            // Insert body into physics world and create BodyHandle component
+            let body_handle = BodyHandle {
+                body_handle: p_world.bodies.insert(body),
+            };
 
             // Create collider
             let collider =
                 ColliderBuilder::cuboid(half_width, total_height / 2.0, half_width).build();
 
             // Insert collider into physics world, attach it to body, and get collider handle
-            let collider_handle =
-                p_world
-                    .colliders
-                    .insert_with_parent(collider, body_handle, &mut p_world.bodies);
+            let collider_handle = p_world.colliders.insert_with_parent(
+                collider,
+                body_handle.body_handle,
+                &mut p_world.bodies,
+            );
 
-            // Create tree
+            // Create Tree component
             let tree = Tree {
                 leaf_width,
                 leaf_height,
                 trunk_height,
-                body_handle,
                 leaf_color,
                 trunk_color,
             };
 
             // Return component bundle and collider handle
-            ((tree, Nothing), Some(collider_handle))
+            ((tree, body_handle), Some(collider_handle))
         },
     );
 }
@@ -214,14 +212,12 @@ pub fn generate_balls(
     ecs_world: &mut World,
     physics_world: &mut PhysicsWorld,
     grid: &Grid,
-    positions: &mut Vec<GridCoord>,
     num_of_balls: u32,
 ) {
     generate_entities(
         ecs_world,
         physics_world,
         grid,
-        positions,
         num_of_balls,
         |position, p_world, _| {
             // Ball size
@@ -236,8 +232,10 @@ pub fn generate_balls(
                 .ccd_enabled(true)
                 .build();
 
-            // Insert body into physics world and get body handle
-            let body_handle = p_world.bodies.insert(body);
+            // Insert body into physics world and create BodyHandle component
+            let body_handle = BodyHandle {
+                body_handle: p_world.bodies.insert(body),
+            };
 
             // Create collider
             let collider = ColliderBuilder::ball(ball_size)
@@ -246,20 +244,20 @@ pub fn generate_balls(
                 .build();
 
             // Insert collider into physics world, attach it to body, and get collider handle
-            let collider_handle =
-                p_world
-                    .colliders
-                    .insert_with_parent(collider, body_handle, &mut p_world.bodies);
+            let collider_handle = p_world.colliders.insert_with_parent(
+                collider,
+                body_handle.body_handle,
+                &mut p_world.bodies,
+            );
 
-            // Create ball
+            // Create Ball component
             let ball = crate::components::Ball {
                 size: ball_size,
-                body_handle,
                 color: Color::BLUE,
             };
 
             // Return component bundle and collider handle
-            ((ball, Nothing), Some(collider_handle))
+            ((ball, body_handle), Some(collider_handle))
         },
     );
 }
@@ -269,14 +267,12 @@ pub fn generate_witches(
     ecs_world: &mut World,
     physics_world: &mut PhysicsWorld,
     grid: &Grid,
-    positions: &mut Vec<GridCoord>,
     num_of_witches: u32,
 ) {
     generate_entities(
         ecs_world,
         physics_world,
         grid,
-        positions,
         num_of_witches,
         |position, p_world, _| {
             // Set witch width and height
@@ -293,24 +289,26 @@ pub fn generate_witches(
                 .ccd_enabled(true)
                 .build();
 
-            // Insert body into physics world and get body handle
-            let body_handle = p_world.bodies.insert(body);
+            // Insert body into physics world and create BodyHandle component
+            let body_handle = BodyHandle {
+                body_handle: p_world.bodies.insert(body),
+            };
 
             // Create collider
             let collider =
                 ColliderBuilder::round_cuboid(width / 2.0, height / 2.0, depth / 2.0, 0.1).build();
 
             // Insert collider into physics world, attach it to body, and get collider handle
-            let collider_handle =
-                p_world
-                    .colliders
-                    .insert_with_parent(collider, body_handle, &mut p_world.bodies);
+            let collider_handle = p_world.colliders.insert_with_parent(
+                collider,
+                body_handle.body_handle,
+                &mut p_world.bodies,
+            );
 
             // Create witch
             let witch = Witch {
                 width,
                 height,
-                body_handle,
                 collider_handle,
                 color: Color::PURPLE,
                 state: WitchState::Patrolling,
@@ -318,7 +316,7 @@ pub fn generate_witches(
             };
 
             // Return component bundle and collider handle
-            ((witch, Nothing), Some(collider_handle))
+            ((witch, body_handle), Some(collider_handle))
         },
     );
 }
