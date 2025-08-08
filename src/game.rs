@@ -6,6 +6,7 @@ use crate::systems::drawing::*;
 use crate::systems::player::*;
 use crate::systems::spawn::*;
 use crate::systems::terrain::*;
+use crate::world::grid::*;
 use crate::world::loader::*;
 use crate::State;
 use hecs::World;
@@ -40,7 +41,7 @@ pub fn new_game() -> Game {
 
     // Load tile map and get grid
     match load_tiled_map("map_01.tmx") {
-        Ok(grid) => {
+        Ok(mut grid) => {
             if DEBUG_MODE {
                 println!("Map loaded successfully!");
             }
@@ -62,6 +63,26 @@ pub fn new_game() -> Game {
 
             // Generate witches
             generate_witches(&mut ecs_world, &mut physics_world, &grid, NUM_OF_WITCHES);
+
+            // Add trees to grid
+            for (_, (_, body_handle)) in ecs_world.query::<(&Tree, &BodyHandle)>().iter() {
+                if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
+                    let pos = body.translation();
+
+                    let converted_pos = GridCoord::from_rapier3d_vec(*pos);
+
+                    let tile = Tile {
+                        kind: TileType::Tree,
+                        coord: converted_pos,
+                    };
+
+                    if DEBUG_MODE {
+                        println!("🌳 {tile:?}");
+                    }
+
+                    grid.add_tile(tile);
+                }
+            }
         }
         Err(e) => eprintln!("Error loading map: {e}"),
     }

@@ -12,12 +12,25 @@ pub struct Grid {
 
 // Grid functions
 impl Grid {
+    // New grid
     pub fn new(width: usize, height: usize, tiles: Vec<Vec<Tile>>) -> Self {
         Self {
             width,
             height,
             tiles,
             tile_size: 1.0,
+        }
+    }
+
+    // Add tile
+    pub fn add_tile(&mut self, tile: Tile) {
+        if tile.coord.z < self.height && tile.coord.x < self.width {
+            self.tiles[tile.coord.z][tile.coord.x] = tile;
+        } else {
+            panic!(
+                "Coordinates out of bounds: ({}, {}) for grid {}x{}",
+                tile.coord.x, tile.coord.z, self.width, self.height
+            );
         }
     }
 }
@@ -97,4 +110,5 @@ pub enum TileType {
     Air,
     Grass,
     Stone,
+    Tree,
 }
