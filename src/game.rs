@@ -68,7 +68,7 @@ impl Game {
             if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
                 let pos = body.translation();
                 let converted_pos = GridCoord::from_rapier3d_vec(*pos);
-                let radius = (tree.leaf_width / 2.0).ceil() as isize;
+                let radius = (tree.leaf_width / 2.0).floor() as isize;
 
                 grid.fill_area(converted_pos, radius, TileType::Tree);
             }
