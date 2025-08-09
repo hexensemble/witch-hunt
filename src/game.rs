@@ -65,22 +65,13 @@ pub fn new_game() -> Game {
             generate_witches(&mut ecs_world, &mut physics_world, &grid, NUM_OF_WITCHES);
 
             // Add trees to grid
-            for (_, (_, body_handle)) in ecs_world.query::<(&Tree, &BodyHandle)>().iter() {
+            for (_, (tree, body_handle)) in ecs_world.query::<(&Tree, &BodyHandle)>().iter() {
                 if let Some(body) = physics_world.bodies.get(body_handle.body_handle) {
                     let pos = body.translation();
-
                     let converted_pos = GridCoord::from_rapier3d_vec(*pos);
+                    let radius = (tree.leaf_width / 2.0).ceil() as isize;
 
-                    let tile = Tile {
-                        kind: TileType::Tree,
-                        coord: converted_pos,
-                    };
-
-                    if DEBUG_MODE {
-                        println!("🌳 {tile:?}");
-                    }
-
-                    grid.add_tile(tile);
+                    grid.fill_area(converted_pos, radius, TileType::Tree);
                 }
             }
         }

@@ -1,3 +1,4 @@
+use crate::settings::*;
 use rapier3d::prelude::*;
 use raylib::prelude::*;
 
@@ -22,8 +23,43 @@ impl Grid {
         }
     }
 
+    // Fill area with tiles
+    pub fn fill_area(&mut self, position: GridCoord, radius: isize, kind: TileType) {
+        for dz in -radius..=radius {
+            for dx in -radius..=radius {
+                let tile_x = position.x as isize + dx;
+                let tile_z = position.z as isize + dz;
+
+                // Bounds check
+                if tile_x < 0 || tile_x >= self.width as isize {
+                    continue;
+                }
+                if tile_z < 0 || tile_z >= self.height as isize {
+                    continue;
+                }
+
+                let tile_coord = GridCoord {
+                    x: tile_x as usize,
+                    y: position.y, // keep same height
+                    z: tile_z as usize,
+                };
+
+                let tile = Tile {
+                    kind,
+                    coord: tile_coord,
+                };
+
+                if DEBUG_MODE {
+                    println!("📩 {tile:?}");
+                }
+
+                self.add_tile(tile);
+            }
+        }
+    }
+
     // Add tile
-    pub fn add_tile(&mut self, tile: Tile) {
+    fn add_tile(&mut self, tile: Tile) {
         if tile.coord.z < self.height && tile.coord.x < self.width {
             self.tiles[tile.coord.z][tile.coord.x] = tile;
         } else {
