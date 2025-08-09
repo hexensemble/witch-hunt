@@ -12,7 +12,7 @@ mod world;
 // States
 pub enum State {
     TitleScreen,
-    Game(Box<Option<Game>>),
+    Game(Box<Game>),
     Quit,
 }
 
@@ -50,18 +50,15 @@ fn main() {
                 }
             }
             // State: Game
-            State::Game(ref mut new_game) => {
+            State::Game(ref mut game) => {
                 // Next state is None
                 let mut next_state: Option<State> = None;
 
-                // Get game
-                if let Some(game) = new_game.as_mut() {
-                    // Update
-                    game::update(&mut rl, &mut next_state, game);
+                // Update
+                game.update(&mut rl, &mut next_state);
 
-                    // Render
-                    game::render(&mut rl, &thread, game);
-                }
+                // Render
+                game.render(&mut rl, &thread);
 
                 // If next state has been set then change current state accordingly
                 if let Some(state) = next_state {

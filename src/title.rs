@@ -15,7 +15,13 @@ pub fn update(rl: &mut RaylibHandle, next_state: &mut Option<State>) {
     // Press Enter or Space to continue
     if rl.is_key_pressed(KeyboardKey::KEY_ENTER) || rl.is_key_pressed(KeyboardKey::KEY_SPACE) {
         // Set state to Game and create new game
-        *next_state = Some(State::Game(Box::new(Some(new_game()))));
+        match Game::new() {
+            Ok(game) => *next_state = Some(State::Game(Box::new(game))),
+            Err(e) => {
+                eprintln!("Failed to create game: {e}");
+                *next_state = Some(State::Quit);
+            }
+        }
     }
 }
 
@@ -30,7 +36,13 @@ pub fn render(rl: &mut RaylibHandle, thread: &RaylibThread, next_state: &mut Opt
     // Start button
     if d.gui_button(Rectangle::new(300.0, 150.0, 200.0, 50.0), "START") {
         // Set state to Game and create new game
-        *next_state = Some(State::Game(Box::new(Some(new_game()))));
+        match Game::new() {
+            Ok(game) => *next_state = Some(State::Game(Box::new(game))),
+            Err(e) => {
+                eprintln!("Failed to create game: {e}");
+                *next_state = Some(State::Quit);
+            }
+        }
     }
 
     // Quit button
