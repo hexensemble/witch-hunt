@@ -1,6 +1,6 @@
 # Witch Hunt
 
-3D world experiment with Rust/Raylib/Rapier/Hecs. 🧙‍♀️
+3D world experiment built with Rust/Raylib/Rapier/Hecs. 🧙‍♀️
 
 This is just me prototyping and experimenting with different systems, some parts could definitely be implemented better.
 
