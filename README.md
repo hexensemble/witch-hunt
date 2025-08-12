@@ -8,6 +8,8 @@
 
 **Download:** https://github.com/hexensemble/witch-hunt/releases
 
+Supports Mac and Windows.
+
 <br>
 
 This is just me prototyping and experimenting with different systems, some parts could definitely be implemented better.
