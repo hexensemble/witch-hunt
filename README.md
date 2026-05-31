@@ -4,7 +4,7 @@
 
 <br>
 
-Just me prototyping and experimenting with 3D graphics, physics, and ECS. Some trees, some balls, and a cuboid witch who chases you using rudimentary pathfinding. The block-based world is laid out in Tiled (which I wouldn't recommend for 3D). Wireframe debug view is enabled so you can see the physics bounds.
+Just me prototyping and experimenting with 3D graphics, physics, and ECS. There's trees, some balls, and a cuboid witch who chases you using rudimentary pathfinding. The block-based world is laid out in Tiled (wouldn't recommend for 3D btw). Wireframe debug view is enabled so you can see physics bounds.
 
 <br>
 
